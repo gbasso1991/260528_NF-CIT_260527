@@ -1,4 +1,4 @@
-#%% Librerias y paquetes 
+#%% Librerias y paquetes
 import numpy as np
 from uncertainties import ufloat, unumpy
 import matplotlib.pyplot as plt
@@ -7,9 +7,8 @@ from glob import glob
 import os
 import chardet
 import re
-from clase_resultados import ResultadosESAR
 from scipy.interpolate import interp1d
-
+from clase_resultados import ResultadosESAR
 #%% Lector de resultados
 def lector_resultados(path):
     '''
@@ -37,14 +36,14 @@ def lector_resultados(path):
                     key = match_uncertain.group(1)[2:]  # Eliminar '# ' al inicio
                     value = float(match_uncertain.group(2))
                     uncertainty = float(match_uncertain.group(3))
-                    
+
                     # Manejar notación científica si está presente
                     if match_uncertain.group(4):
                         exponent = float(match_uncertain.group(4))
                         factor = 10**exponent
                         value *= factor
                         uncertainty *= factor
-                    
+
                     meta[key] = ufloat(value, uncertainty)
                 else:
                     # Patrón para valores simples (sin incertidumbre)
@@ -116,16 +115,16 @@ def lector_ciclos(filepath):
     M_Am  = pd.Series(data['Magnetizacion_(A/m)']).to_numpy(dtype=float)#A/m
 
     return t,H_Vs,M_Vs,H_kAm,M_Am,metadata
-#%% funcion extraer SAR, tau y Hc de resultados 
+#%% funcion extraer SAR, tau y Hc de resultados
 def extraer_SAR_tau(resultados):
     SAR = []
     tau = []
     Hc = []
     for res in resultados:
-        meta,_,_,_,_,_,_,_,_,_,_,_,_,_,_ = lector_resultados(res)   
+        meta,_,_,_,_,_,_,_,_,_,_,_,_,_,_ = lector_resultados(res)
         SAR.append(meta['SAR_W/g'])
         tau.append(meta['tau_ns'])
-        Hc.append(meta['Hc_kA/m']) 
+        Hc.append(meta['Hc_kA/m'])
     return SAR, tau, Hc
 #%% funcion banda temperatura
 def banda_temperatura(t, T, N=500, kind='linear'):
@@ -180,172 +179,184 @@ def banda_temperatura(t, T, N=500, kind='linear'):
     Tmean = np.mean(Ti, axis=0)
 
     return t, T, t_common, Tmin, Tmax, Tmean
-#%% Obtengo ciclos y resultados para cada concentracion - Todo a 300 kHz
+#%% 1- 260706_NF-M2
+nombre_M2='M2 (NF@cit 260527)'
+ciclos_M2 = glob("data/**/*ciclo_promedio_H_M.txt", recursive=True)
+resultados_M2 = glob("data/**/*resultados.txt", recursive=True)
+ciclos_M2.sort()
+resultados_M2.sort()
+conc_M2 =  19.8 
 
-ciclos = glob("data/**/*ciclo_promedio_H_M.txt",recursive=True)
-resultados = glob("data/**/*resultados.txt",recursive=True)
-
-ciclos.sort()
-resultados.sort()
-conc =  19.8 #g/L
-
-for p in ciclos:
+print('Importando ciclos de', nombre_M2,'\n')
+for p in ciclos_M2:
     print('  ',p)
-
-for res in resultados:
+print('\n')
+for res in resultados_M2:
     print('  ',res)
-print('-'*50)    
-SAR, tau, Hc = extraer_SAR_tau(resultados)
-#%% ploteo ciclos 
-fig00, ax =plt.subplots(figsize=(8,6),constrained_layout=True,sharey=True,sharex=True)
+print('-'*50)
 
+SAR_M2, tau_M2, Hc_M2 = extraer_SAR_tau(resultados_M2)
+res_M2=[]
+#%% ploteo ciclos
+fig00, ax =plt.subplots(1,1,figsize=(6,5),constrained_layout=True,sharey=True,sharex=True)
 ax.set_ylabel('M (A/m)')
+ax.set_title('58 kA/m',loc='left')
 
-for i,e in enumerate(ciclos):
+for i,e in enumerate(ciclos_M2):
     if '152dA' in e:
-        _,_,_, H,M,_ = lector_ciclos(ciclos[i])
-        ax.plot(H/1000,M,'-',label=f'{SAR[i]:.2uS}')
+        _,_,_, H_M2,M_M2,_ = lector_ciclos(ciclos_M2[i])
+        print(e)
+        ax.plot(H_M2/1000,M_M2,'-',label=f'{SAR_M2[i]:.3uS}')
 
 ax.grid()
 ax.set_xlabel('H (kA/m)')
 ax.legend(loc='upper left',frameon=True,shadow=True,title='ESAR (W/g)')
-plt.suptitle(f'Comparativa ciclos promedio NF@cit 260527\n300 kHz & 58 kA/m')
-plt.savefig('0_ciclos_promedio_NF@cit_260527.png',dpi=300)
+plt.suptitle(f'Ciclos promedio {nombre_M2} \n300 kHz & 58 kA/m\nC = {conc_M2:.1f} g/L')
+
+
+fig000, axs =plt.subplots(1,1,figsize=(9,7),constrained_layout=True,sharey=True,sharex=True)
+axs.set_ylabel('M (A/m)')
+ls=['-','--','-.']*3
+
+for i,e in enumerate(ciclos_M2):
+    if '100dA' in e:
+        _,_,_, H_M2,M_M2,_ = lector_ciclos(ciclos_M2[i])
+        print(e)
+        axs.plot(H_M2/1000,M_M2,'-',c='C1',ls=ls[i],label=f'{SAR_M2[i]:.3uS}')
+
+for i,e in enumerate(ciclos_M2):
+    if '152dA' in e:
+        _,_,_, H_M2,M_M2,_ = lector_ciclos(ciclos_M2[i])
+        print(e)
+        axs.plot(H_M2/1000,M_M2,'-',c='C2',ls=ls[i],label=f'{SAR_M2[i]:.3uS}')
+
+
+axs.grid()
+axs.set_xlabel('H (kA/m)')
+axs.legend(loc='upper left',frameon=True,shadow=True,title='ESAR (W/g)',ncol=2)
+plt.suptitle(f'Ciclos promedio {nombre_M2} \n300 kHz & 58 kA/m\nC = {conc_M2:.1f} g/L')
 
 #%%
-res=[]
-print('Resultados primera', '='*80,'\n')
-for r in resultados:
-    res.append(ResultadosESAR(os.path.dirname(r)))
+print('Resultados M2', '='*80,'\n')
+for r in resultados_M2:
+    res_M2.append(ResultadosESAR(os.path.dirname(r)))
+rates_M2 = []
 
-rates = []
-for i,r in enumerate(res):
+#%% Templogs
+fig01, axs =plt.subplots(1,1,figsize=(6,5),constrained_layout=True,sharey=True,sharex=True)
+axs.set_ylabel('M (A/m)')
+axs.set_title('58 kA/m',loc='left')
+
+
+for i,r in enumerate(res_M2):
     dt = r.time[-1]-r.time[0]
     dT = r.temperatura[-1]-r.temperatura[0]
     rate=dT/dt
+    rates_M2.append(rate)
     print(f'WRate = {rate:.2f} °C/s')
-    rates.append(rate)
-    Wrate=ufloat(np.mean(rates),np.std(rates)   )
-print('-'*50)
-print(f"ESAR primera: {np.mean(SAR)}")
-print(f" tau primera: {np.mean(tau)}") 
-print(f"  Hc primera: {np.mean(Hc)}")
-print(f"       WRate: {Wrate:.1uS} °C/s")
-print('-'*50)
-#%% Ploteo comparativa templogs
-t,T=[],[]
-fig01, ax = plt.subplots(figsize=(10,6),constrained_layout=True)
-for i,r in enumerate(res):
-    t.append(r.time)
-    T.append(r.temperatura)
-    ax.plot(r.time,r.temperatura,'.-',label=f'{rates[i]:.1f} °C/s')
+    axs.plot(r.time,r.temperatura,'.-',label=f'{rate:.1f}')
+    
+axs.set_ylabel('T (°C)')
+axs.grid()
+axs.set_xlabel('t (s)')
+axs.legend(loc='upper left',frameon=True,shadow=True,title='Warming Rate (°C/s)',ncol=3)
+plt.suptitle(f'Templogs {nombre_M2} \n300 kHz & 58 kA/m\nC = {conc_M2:.1f} g/L')
+
+################################################################################################################################
+#%% Normalizo ciclos por concentracion y ploteo comparativo
+
+fig2, ax =plt.subplots(1,1,figsize=(6,5),constrained_layout=True,sharey=False,sharex=False)
+
+ax.set_title('58 kA/m',loc='left')
+
+for i,e in enumerate(ciclos_M2):
+    if '152dA' in e:
+        _,_,_, H_M2,M_M2,_ = lector_ciclos(ciclos_M2[i])
+        print(os.path.split(e)[-1])
+        ax.plot(H_M2/1000,M_M2/conc_M2,'-',c='C0',label=f'NF@cit\n{conc_M2} g/L' if i==3 else "")
+
+ax.set_ylabel('M/[NPM] (Am²/kg)')
+
+ax.set_xlabel('H (kA/m)')
 ax.grid()
-ax.set_ylabel('T (°C)')
-ax.set_xlabel('t (s)')
-ax.legend(loc='upper left',frameon=True,shadow=True,title='Warming Rate')
-plt.suptitle(f'Templogs NF@cit 260527\n300 kHz & 58 kA/m')    
-plt.savefig('0_templogs_NF@cit_260527.png',dpi=300)
+ax.legend(loc='upper left',frameon=True,shadow=True,ncol=2)
+plt.suptitle(f'Ciclos promedio nomalizados por concentracion\n300 kHz & 58 kA/m\n')
 
-tt_1, TT_1, t_common_1, Tmin_1, Tmax_1, Tmean_1 = banda_temperatura(t, T)
-
-fig02,ax = plt.subplots(figsize=(9,4),constrained_layout=True,sharex=True)
-
-for t, T in zip(tt_1, TT_1):
-    ax.plot(t, T, '--', c='C0',alpha=0.3)
-ax.fill_between(t_common_1, Tmin_1, Tmax_1,alpha=0.3,color='C0')
-ax.plot(t_common_1, Tmean_1,'C0-', lw=1.5, label=f'NF@cit 260527 - {Wrate:.1uS} °C/s')
-
-ax.set_ylabel('T (°C)')
-ax.grid()
-ax.legend(loc='upper left',frameon=True,shadow=True,title='Muestra  -  Warming Rate')
-ax.set_xlabel('t (s)')
-plt.suptitle('Comparativa templogs - $f=300$ kHz  $H_0=58$ kA/m')
-plt.savefig('0_templogs_promedio_NF@cit_260527.png',dpi=300)
-plt.show()
 #%% ploteo comparativo de errorbars de ESAR
-cuadro = '$f=300$ kHz\n$H_0=58$ kA/m'
-categorias = ['260527']
+categorias = ['260527\nNF@cit']
 x = np.arange(len(categorias))
 
-fig03, ax = plt.subplots(figsize=(9,5),constrained_layout=True)
+fig3, (ax,ax2) = plt.subplots(1,2,figsize=(10,4),constrained_layout=True,sharey=True)
 
 sep = 0.25
 
-for i,s in enumerate(SAR):
-    ax.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
+for i,s in enumerate(SAR_M2[:3]):
+    ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
 
-ax.set_xticks(x)
-ax.set_xticklabels(categorias)
+# for i,s in enumerate(SAR_M2[3:6]):
+#     ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C1')
+
+ax.set_title('38 kA/m',loc='left')
+ax2.set_title('58 kA/m',loc='left')
+for a in [ax,ax2]:
+    a.grid(axis='y', alpha=0.3)
+    a.set_xticks(x)
+    a.set_xticklabels(categorias)
+    
+
 ax.set_ylabel('ESAR (W/g)')
-ax.set_title('ESAR NF@cit 260527')
-ax.grid(axis='y', alpha=0.3)
+plt.suptitle(f'ESAR\n300 kHz & 58 kA/m\n')
 
-ax.text(0.9,0.9,cuadro, transform=ax.transAxes, 
-        va='top', ha='center', fontsize=12,
-        bbox=dict(alpha=0.8,facecolor='white'))
 plt.show()
-#%% ploteo comparativo de errorbars de tau
-fig04, ax = plt.subplots(figsize=(9,5),constrained_layout=True)
+#%% ploteo comparativo de tau
+categorias = ['260527\nNF@cit']
+x = np.arange(len(categorias))
 
+fig4, ax2 = plt.subplots(1,1,figsize=(6,4),constrained_layout=True,sharey=True)
 sep = 0.25
+for i,s in enumerate(tau_M2):
+    ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
 
-for i,s in enumerate(tau):
-    ax.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
-
-# for i,s in enumerate(tau_13_mala):
-#     ax.bar(1+i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C3')
-
-# for i,s in enumerate(tau_13_buena):
-#     ax.bar(2+i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C2')
-
-# for i,s in enumerate(tau_13_AV):
-#     ax.bar(3+i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C1')
-
-# for i,s in enumerate(tau_13_AN):
-#     ax.bar(4+i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C4')
-
-ax.set_xticks(x)
-ax.set_xticklabels(categorias)
-ax.set_ylabel(r'$\tau$ (ns)')
-#ax.set_xlabel('Categoría')
-ax.set_title(r'$\tau$ NF@cit 260527')
-ax.grid(axis='y', alpha=0.3)
-
-ax.text(0.9,0.9,cuadro, transform=ax.transAxes, 
-        va='top', ha='center', fontsize=12,
-        bbox=dict(alpha=0.8,facecolor='white'))
+ax2.set_title('58 kA/m',loc='left')
+ax2.grid(axis='y', alpha=0.3)
+ax2.set_xticks(x)
+ax2.set_xticklabels(categorias)
+ax2.set_ylabel('tau (ns)')
+plt.suptitle(f'tau\n300 kHz & 58 kA/m\n')
 plt.show()
+
 #%% Idem Hc
-fig05, ax = plt.subplots(figsize=(9,5),constrained_layout=True)
+categorias = ['260527\nNF@cit']
+x = np.arange(len(categorias))
+
+fig5,ax2 = plt.subplots(1,1,figsize=(6,4),constrained_layout=True,sharey=True)
 
 sep = 0.25
-for i,s in enumerate(Hc):
-    ax.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
 
-ax.set_xticks(x)
-ax.set_xticklabels(categorias)
-ax.set_ylabel('H$_c$ (kA/m)')
-ax.set_title('H$_c$ NF@cit 260527')
-ax.grid(axis='y', alpha=0.3)
+for i,s in enumerate(Hc_M2):
+    ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
 
-ax.text(0.9,0.9,cuadro, transform=ax.transAxes, 
-        va='top', ha='center', fontsize=12,
-        bbox=dict(alpha=0.8,facecolor='white'))
+ax2.set_title('58 kA/m',loc='left')
+ax2.grid(axis='y', alpha=0.3)
+ax2.set_xticks(x)
+ax2.set_xticklabels(categorias)
+ax2.set_ylabel('Hc (kA/m)')
+plt.suptitle(f'Hc\n300 kHz & 58 kA/m\n')
 plt.show()
-#%%
-print(f'Muestra = {nombre_M1}')
-print(f'Concentracion = {conc_M1:.1f} g/L')
-print(f'ESAR = {np.mean(SAR_M1):.2uS} W/g')
-print(f'tau = {np.mean(tau_M1):.1uS} ns')
-print(f'Hc = {np.mean(Hc_M1):.2uS} kA/m') 
-# %%
 
-#%% Salvo figs
-fig00.savefig('00_ciclos_promedio_NF@cit_260527.png',dpi=300)
-fig01.savefig('01_templogs_NF@cit_260527.png',dpi=300)
-fig02.savefig('02_templogs_promedio_NF@cit_260527.png',dpi=300)
-fig03.savefig('03_ESAR_NF@cit_260527.png',dpi=300)
-fig04.savefig('04_tau_NF@cit_260527.png',dpi=300)
-fig05.savefig('05_Hc_NF@cit_260527.png',dpi=300)
 
+#%% Salvo todas las figuras
+fig00.savefig('00_ciclos_promedio_NFM2_260527.png',dpi=300)
+fig000.savefig('01_ciclos_promedio_all_NFM2_260527.png',dpi=300)
+fig01.savefig('02_templogs_NFM2_260527.png',dpi=300)
+fig2.savefig('04_ciclos_promedio_comparativa.png',dpi=300)
+fig3.savefig('05_ESAR_comparativa.png',dpi=300)
+fig4.savefig('06_tau_comparativa.png',dpi=300)
+fig5.savefig('07_Hc_comparativa.png',dpi=300)
+#%% Printeo resultados
+print(f'Muestra = {nombre_M2}')
+print(f'Concentracion = {conc_M2:.1f} g/L')
+print(f'ESAR = {np.mean(SAR_M2):.2uS} W/g')
+print(f'tau = {np.mean(tau_M2):.1uS} ns')
+print(f'Hc = {np.mean(Hc_M2):.1uS} kA/m') 
 # %%
