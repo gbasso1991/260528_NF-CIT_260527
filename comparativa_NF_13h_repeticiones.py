@@ -349,3 +349,7 @@ fig04.savefig('04_tau_NF@cit_260527.png',dpi=300)
 fig05.savefig('05_Hc_NF@cit_260527.png',dpi=300)
 
 # %%
+
+
+
+

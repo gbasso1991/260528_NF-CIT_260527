@@ -360,3 +360,7 @@ print(f'ESAR = {np.mean(SAR_M2):.2uS} W/g')
 print(f'tau = {np.mean(tau_M2):.1uS} ns')
 print(f'Hc = {np.mean(Hc_M2):.1uS} kA/m') 
 # %%
+
+
+
+
