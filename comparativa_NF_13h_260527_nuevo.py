@@ -286,17 +286,13 @@ plt.suptitle(f'Ciclos promedio nomalizados por concentracion\n300 kHz & 58 kA/m\
 categorias = ['260527\nNF@cit']
 x = np.arange(len(categorias))
 
-fig3, (ax,ax2) = plt.subplots(1,2,figsize=(10,4),constrained_layout=True,sharey=True)
+fig3, ax2 = plt.subplots(1,1,figsize=(6,4),constrained_layout=True,sharey=True)
 
 sep = 0.25
 
 for i,s in enumerate(SAR_M2[:3]):
     ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C0')
 
-# for i,s in enumerate(SAR_M2[3:6]):
-#     ax2.bar(i*sep-sep, s.n, yerr=s.s, width=0.2, capsize=5, color='C1')
-
-ax.set_title('38 kA/m',loc='left')
 ax2.set_title('58 kA/m',loc='left')
 for a in [ax,ax2]:
     a.grid(axis='y', alpha=0.3)
@@ -360,6 +356,43 @@ print(f'ESAR = {np.mean(SAR_M2):.2uS} W/g')
 print(f'tau = {np.mean(tau_M2):.1uS} ns')
 print(f'Hc = {np.mean(Hc_M2):.1uS} kA/m') 
 # %%
+#%% Guardar resumen de resultados
+
+# Diccionario de conversión Idc -> H0
+H0_dict = {'100dA': 38,
+    '125dA': 47,
+    '152dA': 58,}
+
+archivo_salida = 'Resumen_resultados_NFM2_260527.txt'
+
+with open(archivo_salida, 'w', encoding='utf-8') as f:
+
+    f.write(f'Muestra = {nombre_M2}\n')
+    f.write(f'Concentracion = {conc_M2:.1f} g/L\n\n')
+
+    f.write(f'{"Medición":<9}{"H0 (kA/m)":<11}{"ESAR (W/g)":<18}{"tau (ns)":<18}{"Hc (kA/m)":<18}\n')
+    f.write('-'*75 + '\n')
+
+    for i, (res, sar, tau, hc) in enumerate(zip(resultados_M2, SAR_M2, tau_M2, Hc_M2), start=1):
+
+        # Obtener H0 a partir del nombre del directorio
+        H0 = np.nan
+        for key, value in H0_dict.items():
+            if key in res:
+                H0 = value
+                break
+
+        sar_str = f'{sar:.2uS}'
+        tau_str = f'{tau:.1uS}'
+        hc_str  = f'{hc:.2uS}'
+
+        f.write(f'{i:<9}{H0:<11.0f}{sar_str:<18}{tau_str:<18}{hc_str:<18}\n')
+
+print(f'Resultados guardados en: {archivo_salida}')
+# %%
+
+
+
 
 
 
